@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>小游戏厅 · 原生 JS 写的三个小游戏</title>
+<meta name="description" content="用原生 JavaScript 写的网页小游戏合集：合成大西瓜、图片华容道、3D 魔方。没有框架，打开就能玩。">
+<meta name="theme-color" content="#0d0f14">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%23151821'/%3E%3Crect x='7' y='7' width='8' height='8' rx='2' fill='%237ee787'/%3E%3Crect x='17' y='7' width='8' height='8' rx='2' fill='%238b7cf6'/%3E%3Crect x='7' y='17' width='8' height='8' rx='2' fill='%23f0a868'/%3E%3Crect x='17' y='17' width='8' height='8' rx='2' fill='%23343a4a'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/css/portal.css">
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="./index.html">
+    <span class="brand-icon" aria-hidden="true">
+      <i></i><i></i><i></i><i></i>
+    </span>
+    <span class="brand-name">小游戏厅</span>
+  </a>
+  <p class="topbar-note">纯前端 · 无需安装</p>
+</header>
+
+<main>
+
+  <section class="hero">
+    <p class="kicker"><span class="dot"></span>side project · 2026</p>
+    <h1>三个小游戏，<br>全部跑在浏览器里。</h1>
+    <p class="lede">
+      没有框架、没有后端、没有构建步骤。物理碰撞、图搜索算法、3D 变换，
+      都是手写出来的 —— 打开就能玩。
+    </p>
+    <div class="hero-stats">
+      <span><b>3</b> 个可玩</span>
+      <span class="sep"></span>
+      <span>零依赖</span>
+      <span class="sep"></span>
+      <span>无后端</span>
+    </div>
+  </section>
+
+  <section class="grid" aria-label="游戏列表">
+
+    <a class="game-card" href="games/daxigua.html" style="--c:#7ee787;">
+      <div class="thumb">
+        <svg viewBox="0 0 320 180" role="img" aria-label="合成大西瓜缩略图">
+          <defs>
+            <linearGradient id="dx-bg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#16241a"/>
+              <stop offset="1" stop-color="#0d1210"/>
+            </linearGradient>
+            <radialGradient id="dx-g1" cx="0.35" cy="0.3" r="0.8">
+              <stop offset="0" stop-color="#8ad79a"/>
+              <stop offset="0.55" stop-color="#2fa84f"/>
+              <stop offset="1" stop-color="#145229"/>
+            </radialGradient>
+            <radialGradient id="dx-g2" cx="0.35" cy="0.3" r="0.8">
+              <stop offset="0" stop-color="#d3eda1"/>
+              <stop offset="0.55" stop-color="#8ec63f"/>
+              <stop offset="1" stop-color="#547f16"/>
+            </radialGradient>
+            <radialGradient id="dx-g3" cx="0.35" cy="0.3" r="0.8">
+              <stop offset="0" stop-color="#ffe491"/>
+              <stop offset="0.55" stop-color="#f4b81c"/>
+              <stop offset="1" stop-color="#a97604"/>
+            </radialGradient>
+          </defs>
+          <rect width="320" height="180" fill="url(#dx-bg)"/>
+          <ellipse cx="160" cy="150" rx="86" ry="12" fill="#000" opacity="0.35"/>
+          <circle cx="160" cy="112" r="42" fill="url(#dx-g1)"/>
+          <circle cx="98" cy="132" r="26" fill="url(#dx-g3)"/>
+          <circle cx="222" cy="136" r="22" fill="url(#dx-g2)"/>
+          <circle cx="126" cy="74" r="15" fill="#e5484d"/>
+          <circle cx="196" cy="68" r="12" fill="url(#dx-g3)"/>
+          <circle cx="160" cy="112" r="14" fill="none" stroke="#0d1210" stroke-opacity="0.18" stroke-width="2"/>
+          <path d="M160 70 q10 -14 22 -16" fill="none" stroke="#6b4226" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+        <span class="badge play">可玩</span>
+      </div>
+      <div class="card-body">
+        <h2>合成大西瓜</h2>
+        <p>两个相同的水果撞在一起就合成更大的。物理引擎负责碰撞和堆叠，水果图案全部用 Canvas 手绘。</p>
+        <ul class="tags"><li>Matter.js</li><li>Canvas</li><li>本地存档</li></ul>
+        <span class="cta">开始玩
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13"/><path d="m13 6 6 6-6 6"/></svg>
+        </span>
+      </div>
+    </a>
+
+    <a class="game-card" href="games/huarongdao.html" style="--c:#f0a868;">
+      <div class="thumb">
+        <svg viewBox="0 0 320 180" role="img" aria-label="图片华容道缩略图">
+          <defs>
+            <linearGradient id="hr-bg" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#1a1d2e"/>
+              <stop offset="1" stop-color="#341b3f"/>
+            </linearGradient>
+            <radialGradient id="hr-glow" cx="0.74" cy="0.6" r="0.45">
+              <stop offset="0" stop-color="#ff9a5b" stop-opacity="0.20"/>
+              <stop offset="1" stop-color="#ff9a5b" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <rect width="320" height="180" fill="url(#hr-bg)"/>
+          <rect width="320" height="180" fill="url(#hr-glow)"/>
+          <g fill="#ffffff">
+            <rect x="92" y="22" width="24" height="24" rx="5" opacity="0.20"/>
+            <rect x="120" y="22" width="24" height="24" rx="5" opacity="0.14"/>
+            <rect x="148" y="22" width="24" height="24" rx="5" opacity="0.18"/>
+            <rect x="176" y="22" width="24" height="24" rx="5" opacity="0.12"/>
+            <rect x="204" y="22" width="24" height="24" rx="5" opacity="0.16"/>
+            <rect x="92" y="50" width="24" height="24" rx="5" opacity="0.13"/>
+            <rect x="120" y="50" width="24" height="24" rx="5" opacity="0.19"/>
+            <rect x="148" y="50" width="24" height="24" rx="5" opacity="0.11"/>
+            <rect x="176" y="50" width="24" height="24" rx="5" opacity="0.17"/>
+            <rect x="204" y="50" width="24" height="24" rx="5" opacity="0.13"/>
+            <rect x="92" y="78" width="24" height="24" rx="5" opacity="0.17"/>
+            <rect x="120" y="78" width="24" height="24" rx="5" opacity="0.11"/>
+            <rect x="176" y="78" width="24" height="24" rx="5" opacity="0.15"/>
+            <rect x="204" y="78" width="24" height="24" rx="5" opacity="0.19"/>
+            <rect x="92" y="106" width="24" height="24" rx="5" opacity="0.12"/>
+            <rect x="120" y="106" width="24" height="24" rx="5" opacity="0.18"/>
+            <rect x="148" y="106" width="24" height="24" rx="5" opacity="0.14"/>
+            <rect x="176" y="106" width="24" height="24" rx="5" opacity="0.11"/>
+            <rect x="204" y="106" width="24" height="24" rx="5" opacity="0.16"/>
+            <rect x="92" y="134" width="24" height="24" rx="5" opacity="0.16"/>
+            <rect x="120" y="134" width="24" height="24" rx="5" opacity="0.12"/>
+            <rect x="148" y="134" width="24" height="24" rx="5" opacity="0.19"/>
+            <rect x="176" y="134" width="24" height="24" rx="5" opacity="0.13"/>
+          </g>
+          <rect x="148" y="78" width="24" height="24" rx="5" fill="none" stroke="#f0a868" stroke-width="1.6" stroke-dasharray="4 3" opacity="0.85"/>
+        </svg>
+        <span class="badge play">可玩</span>
+      </div>
+      <div class="card-body">
+        <h2>图片华容道</h2>
+        <p>把一张图切碎成 5×5，滑动拼回原样。内置 IDA* 求解器，卡住可以一键看最优解并自动走完。</p>
+        <ul class="tags"><li>滑块拼图</li><li>IDA* 搜索</li><li>自定义图片</li></ul>
+        <span class="cta">开始玩
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13"/><path d="m13 6 6 6-6 6"/></svg>
+        </span>
+      </div>
+    </a>
+
+    <a class="game-card" href="games/cube.html" style="--c:#8b7cf6;">
+      <div class="thumb">
+        <svg viewBox="0 0 320 180" role="img" aria-label="3D 魔方缩略图">
+          <defs>
+            <linearGradient id="mf-bg" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#141a29"/>
+              <stop offset="1" stop-color="#0e1220"/>
+            </linearGradient>
+          </defs>
+          <rect width="320" height="180" fill="url(#mf-bg)"/>
+          <ellipse cx="160" cy="152" rx="70" ry="10" fill="#000" opacity="0.4"/>
+          <polygon points="160,40 212,66 160,92 108,66" fill="#f2f2ec"/>
+          <polygon points="108,66 160,92 160,144 108,118" fill="#009e60"/>
+          <polygon points="212,66 160,92 160,144 212,118" fill="#c4163c"/>
+          <g stroke="#0e1220" stroke-opacity="0.55" stroke-width="1.6">
+            <path d="M142.7 48.7 L194.7 74.7"/>
+            <path d="M125.3 57.3 L177.3 83.3"/>
+            <path d="M177.3 48.7 L125.3 74.7"/>
+            <path d="M194.7 57.3 L142.7 83.3"/>
+            <path d="M108 92 L160 118"/>
+            <path d="M108 118 L160 144"/>
+            <path d="M125.3 74.7 L125.3 126.7"/>
+            <path d="M142.7 83.3 L142.7 135.3"/>
+            <path d="M212 83.3 L160 109.3"/>
+            <path d="M212 100.7 L160 126.7"/>
+            <path d="M194.7 74.7 L194.7 126.7"/>
+            <path d="M177.3 83.3 L177.3 135.3"/>
+          </g>
+        </svg>
+        <span class="badge play">可玩</span>
+      </div>
+      <div class="card-body">
+        <h2>3×3 魔方</h2>
+        <p>26 个小方块各自记着一个 3×3 旋转矩阵。纯 CSS 3D 渲染，拖哪个方块就转它所在的那一层，没有 Three.js 也没有 WebGL。</p>
+        <ul class="tags"><li>3D 变换</li><li>矩阵运算</li><li>拖拽转层</li></ul>
+        <span class="cta">开始玩
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13"/><path d="m13 6 6 6-6 6"/></svg>
+        </span>
+      </div>
+    </a>
+
+  </section>
+
+  <section class="notes">
+    <h2>这些是怎么做出来的</h2>
+    <div class="note-grid">
+      <article>
+        <h3>物理与碰撞</h3>
+        <p>西瓜用 Matter.js 处理刚体堆叠，接缝处靠手动微调摩擦系数，不然水果会一直打滑。</p>
+      </article>
+      <article>
+        <h3>启发式搜索</h3>
+        <p>华容道的自动还原是 IDA*：把「每块离目标多远」的和当启发函数，配合曼哈顿距离剪枝。</p>
+      </article>
+      <article>
+        <h3>3D 与矩阵</h3>
+        <p>魔方没有用 Three.js：26 个小方块各自记着一个 3×3 旋转矩阵，转层就是把旋转矩阵左乘上去，CSS 只负责把它写成 matrix3d。</p>
+      </article>
+      <article>
+        <h3>零依赖部署</h3>
+        <p>整个站点就是几个静态文件，丢进 GitHub Pages 就能跑，不用服务器也不用构建。</p>
+      </article>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <p>个人练习项目 · 所有代码在浏览器里跑，不上传任何数据</p>
+  <p class="foot-dim">建议用 Chrome / Edge 打开</p>
+</footer>
+
+</body>
+</html>
