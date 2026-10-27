@@ -1,0 +1,383 @@
+/* ============================================================
+   小游戏厅 —— 首页样式
+   只有一个主色变量体系，卡片用 --c 各自上色
+   ============================================================ */
+
+* { box-sizing: border-box; }
+
+:root {
+  --bg: #0d0f14;
+  --surface: #151821;
+  --surface-2: #1b1f2a;
+  --line: rgba(255, 255, 255, .09);
+  --line-strong: rgba(255, 255, 255, .16);
+  --text: #eef0f6;
+  --muted: #99a0b0;
+  --dim: #6d7484;
+  --radius: 18px;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+          "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "Cascadia Code", Consolas, monospace;
+}
+
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(900px 520px at 50% -12%, rgba(139, 124, 246, .16), transparent 62%),
+    radial-gradient(680px 420px at 88% 4%, rgba(126, 231, 135, .07), transparent 58%),
+    var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  line-height: 1.75;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, .06) 1px, transparent 1px);
+  background-size: 22px 22px;
+  -webkit-mask-image: linear-gradient(#000 0%, transparent 68%);
+  mask-image: linear-gradient(#000 0%, transparent 68%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -.02em; line-height: 1.25; }
+p { margin: 0; }
+ul { margin: 0; padding: 0; list-style: none; }
+svg { display: block; max-width: 100%; }
+
+/* ---------- 顶栏 ---------- */
+.topbar {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 22px 28px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -.01em;
+}
+
+.brand-icon {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  width: 24px;
+  height: 24px;
+  padding: 3px;
+  border-radius: 7px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+
+.brand-icon i { border-radius: 1.5px; display: block; }
+.brand-icon i:nth-child(1) { background: #7ee787; }
+.brand-icon i:nth-child(2) { background: #8b7cf6; }
+.brand-icon i:nth-child(3) { background: #f0a868; }
+.brand-icon i:nth-child(4) { background: #3a4054; }
+
+.topbar-note {
+  font-size: 12px;
+  color: var(--dim);
+  letter-spacing: .02em;
+}
+
+/* ---------- 首屏 ---------- */
+.hero {
+  position: relative;
+  z-index: 1;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 56px 28px 44px;
+}
+
+.kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 22px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.kicker .dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #7ee787;
+  box-shadow: 0 0 0 3px rgba(126, 231, 135, .13);
+}
+
+.hero h1 {
+  font-size: clamp(2.05rem, 5.2vw, 3.3rem);
+  letter-spacing: -.035em;
+  line-height: 1.14;
+  margin-bottom: 22px;
+  background: linear-gradient(180deg, #ffffff 30%, #b9c0d0 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: #fff;
+}
+
+.lede {
+  max-width: 36em;
+  font-size: 15.5px;
+  color: var(--muted);
+  line-height: 1.85;
+}
+
+.hero-stats {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 28px;
+  font-size: 13px;
+  color: var(--dim);
+}
+
+.hero-stats b {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  margin-right: 3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.hero-stats .sep {
+  width: 1px;
+  height: 13px;
+  background: var(--line-strong);
+}
+
+.br-m { display: none; }
+
+/* ---------- 游戏卡片 ---------- */
+.grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(272px, 1fr));
+  gap: 18px;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 28px;
+}
+
+.game-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  color: inherit;
+  text-decoration: none;
+  will-change: transform;
+  transition: transform .3s cubic-bezier(.16, 1, .3, 1),
+              border-color .3s, box-shadow .3s;
+}
+
+a.game-card:hover {
+  transform: translateY(-5px);
+  border-color: color-mix(in srgb, var(--c) 42%, var(--line));
+  box-shadow: 0 28px 56px -30px color-mix(in srgb, var(--c) 55%, #000),
+              0 0 0 1px color-mix(in srgb, var(--c) 18%, transparent);
+}
+
+a.game-card:hover .thumb svg { transform: scale(1.045); }
+
+a.game-card:hover .cta svg { transform: translateX(3px); }
+
+a.game-card:focus-visible {
+  outline: 2px solid var(--c);
+  outline-offset: 2px;
+}
+
+.thumb {
+  position: relative;
+  overflow: hidden;
+  background: #0b0d12;
+  border-bottom: 1px solid var(--line);
+}
+
+.thumb svg {
+  width: 100%;
+  height: auto;
+  transition: transform .55s cubic-bezier(.16, 1, .3, 1);
+}
+
+.badge {
+  position: absolute;
+  top: 11px;
+  left: 11px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .02em;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.badge.play {
+  background: rgba(126, 231, 135, .16);
+  border: 1px solid rgba(126, 231, 135, .32);
+  color: #9ff0a6;
+}
+
+.badge.soon {
+  background: rgba(255, 255, 255, .07);
+  border: 1px solid var(--line-strong);
+  color: var(--muted);
+}
+
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  flex: 1;
+  padding: 18px 20px 20px;
+}
+
+.card-body h2 { font-size: 16.5px; }
+
+.card-body p {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.78;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.tags li {
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, .035);
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c);
+}
+
+.cta svg {
+  width: 15px;
+  height: 15px;
+  transition: transform .25s ease;
+}
+
+.cta.muted { color: var(--dim); }
+
+/* 未开放的卡片 */
+.is-locked { cursor: default; }
+.is-locked .thumb svg { opacity: .82; }
+
+/* ---------- 说明 ---------- */
+.notes {
+  position: relative;
+  z-index: 1;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 76px 28px 0;
+}
+
+.notes > h2 {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--dim);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  font-family: var(--mono);
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.note-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(218px, 1fr));
+  gap: 28px;
+  padding-top: 26px;
+}
+
+.note-grid h3 {
+  font-size: 14.5px;
+  margin-bottom: 7px;
+}
+
+.note-grid p {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+/* ---------- 页脚 ---------- */
+.foot {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  max-width: 1080px;
+  margin: 72px auto 0;
+  padding: 22px 28px 34px;
+  border-top: 1px solid var(--line);
+  font-size: 12.5px;
+  color: var(--dim);
+}
+
+/* ---------- 响应式 ---------- */
+@media (max-width: 720px) {
+  .topbar { padding: 18px 20px; }
+  .hero { padding: 34px 20px 34px; }
+  .grid { padding: 0 20px; }
+  .notes { padding: 56px 20px 0; }
+  .foot { padding: 20px 20px 30px; margin-top: 52px; }
+  .topbar-note { display: none; }
+  .br-m { display: inline; }
+  .hero-stats { font-size: 12.5px; gap: 11px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: .01ms !important; }
+  html { scroll-behavior: auto; }
+}
