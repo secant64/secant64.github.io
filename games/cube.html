@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>3×3 魔方 · 小游戏厅</title>
+<style>
+:root{
+  --bg:#0a0c11;
+  --card:#12151d;
+  --line:#252b38;
+  --text:#e9edf5;
+  --dim:#8c96a8;
+  --accent:#8b7cf6;
+  --s:76px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  min-height:100vh;
+  background:
+    radial-gradient(1100px 620px at 76% -12%, rgba(139,124,246,.18), transparent 62%),
+    radial-gradient(760px 520px at 6% 104%, rgba(126,231,135,.06), transparent 60%),
+    var(--bg);
+  color:var(--text);
+  font:15px/1.65 "PingFang SC","Microsoft YaHei",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+
+.back{
+  position:fixed;left:18px;top:18px;z-index:20;
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 14px;border-radius:999px;
+  background:rgba(20,24,34,.82);border:1px solid var(--line);
+  color:var(--dim);font-size:13px;text-decoration:none;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  transition:.2s;
+}
+.back:hover{color:var(--text);border-color:#3b4458}
+
+.wrap{
+  display:grid;grid-template-columns:minmax(0,1fr) 348px;gap:30px;
+  max-width:1180px;margin:0 auto;padding:66px 24px 48px;align-items:start;
+}
+
+/* ---------- 3D 舞台 ---------- */
+.stage-col{display:flex;flex-direction:column;align-items:center;gap:18px}
+.hud{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.chip{
+  min-width:88px;padding:8px 16px;border-radius:12px;
+  background:var(--card);border:1px solid var(--line);text-align:center;
+}
+.chip b{display:block;font-size:19px;font-variant-numeric:tabular-nums;letter-spacing:.4px}
+.chip span{font-size:11px;color:var(--dim);letter-spacing:.08em}
+
+.stage{
+  display:grid;place-items:center;
+  width:100%;min-height:calc(var(--s) * 3 + 96px);
+  padding:32px 16px;
+  perspective:1500px;perspective-origin:50% 50%;
+  touch-action:none;user-select:none;-webkit-user-select:none;
+  cursor:grab;
+}
+.stage:active{cursor:grabbing}
+.stage.is-dragging{cursor:grabbing}
+
+.scene{
+  position:relative;
+  width:calc(var(--s) * 3);height:calc(var(--s) * 3);
+  transform-style:preserve-3d;
+  will-change:transform;
+}
+
+/* 内部挡板：方块之间留了 1px 缝隙，四个方块交汇处会有针孔能看到背面，
+   这块放在 z=0 的深色板把视线挡掉，顺便让缝隙看起来都是黑的 */
+.core{
+  position:absolute;left:50%;top:50%;
+  width:calc(var(--s) * 2.9);height:calc(var(--s) * 2.9);
+  margin-left:calc(var(--s) * -1.45);margin-top:calc(var(--s) * -1.45);
+  background:#080a0f;
+  pointer-events:none;
+}
+
+.cubie{
+  position:absolute;left:50%;top:50%;
+  width:var(--s);height:var(--s);
+  margin-left:calc(var(--s) / -2);margin-top:calc(var(--s) / -2);
+  transform-style:preserve-3d;
+}
+.face{
+  position:absolute;inset:0;
+  background:#0d1016;
+  /* 这里不能有圆角：四个方块交汇处会因此留出菱形小孔，能看穿整个立方体 */
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.05);
+  backface-visibility:visible;
+}
+.sticker{
+  position:absolute;inset:6%;
+  border-radius:15%;
+  box-shadow:
+    inset 0 -3px 7px rgba(0,0,0,.28),
+    inset 0 3px 5px rgba(255,255,255,.22),
+    0 1px 2px rgba(0,0,0,.35);
+  transition:box-shadow .3s, filter .3s;
+}
+.stage.solved .sticker{
+  box-shadow:
+    inset 0 -3px 7px rgba(0,0,0,.22),
+    inset 0 3px 5px rgba(255,255,255,.3),
+    0 0 14px rgba(139,124,246,.55);
+}
+
+.hint{font-size:12.5px;color:var(--dim);text-align:center;line-height:1.9}
+.hint kbd{
+  display:inline-block;padding:1px 6px;margin:0 2px;border-radius:5px;
+  background:#1b202b;border:1px solid #2d3444;border-bottom-width:2px;
+  font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:#c2cad8;
+}
+
+/* ---------- 右侧面板 ---------- */
+.panel{display:flex;flex-direction:column;gap:16px}
+.card{
+  background:linear-gradient(180deg, rgba(255,255,255,.028), rgba(255,255,255,0)) , var(--card);
+  border:1px solid var(--line);border-radius:18px;padding:22px;
+}
+.card h1{margin:0 0 8px;font-size:20px;letter-spacing:-.01em}
+.card h2{margin:0 0 12px;font-size:14px;color:var(--dim);font-weight:600;letter-spacing:.06em}
+.card p{margin:0 0 16px;color:var(--dim);font-size:13.5px}
+.card p:last-child{margin-bottom:0}
+
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btns .full{grid-column:1 / -1}
+button{
+  appearance:none;border:1px solid var(--line);background:#181d28;color:var(--text);
+  font:inherit;font-size:14px;padding:11px 14px;border-radius:11px;cursor:pointer;
+  transition:.18s;
+}
+button:hover{background:#1e2431;border-color:#39425a}
+button:active{transform:translateY(1px)}
+button.primary{
+  background:linear-gradient(135deg,#8b7cf6,#6c5ce7);border-color:transparent;color:#fff;
+  box-shadow:0 6px 20px -8px rgba(139,124,246,.9);
+}
+button.primary:hover{filter:brightness(1.08)}
+button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+
+.msg{
+  margin-top:14px;padding:10px 12px;border-radius:10px;
+  background:rgba(139,124,246,.09);border:1px solid rgba(139,124,246,.22);
+  color:#c6bdfa;font-size:13px;min-height:40px;display:flex;align-items:center;
+}
+.msg.win{
+  background:rgba(126,231,135,.1);border-color:rgba(126,231,135,.3);color:#9ef0ab;
+}
+
+.ops{margin:0;padding:0;list-style:none;font-size:13.5px;color:var(--dim)}
+.ops li{padding-left:18px;position:relative;margin-bottom:9px}
+.ops li:last-child{margin-bottom:0}
+.ops li::before{
+  content:"";position:absolute;left:0;top:9px;
+  width:6px;height:6px;border-radius:2px;background:var(--accent);opacity:.65;
+}
+.ops b{color:var(--text);font-weight:600}
+
+@media (max-width:900px){
+  .wrap{grid-template-columns:1fr;gap:22px;padding:58px 16px 36px}
+  .stage{padding:20px 8px;min-height:calc(var(--s) * 3 + 60px)}
+  .back{left:12px;top:12px;padding:7px 12px}
+}
+</style>
+</head>
+<body>
+
+<a class="back" href="../index.html">← 游戏厅</a>
+
+<main class="wrap">
+
+  <section class="stage-col">
+    <div class="hud">
+      <div class="chip"><b id="moves">0</b><span>步数</span></div>
+      <div class="chip"><b id="time">0:00</b><span>用时</span></div>
+      <div class="chip"><b id="best">--:--</b><span>最佳</span></div>
+    </div>
+
+    <div class="stage" id="stage">
+      <div class="scene" id="scene"></div>
+    </div>
+
+    <p class="hint">
+      拖动<b>方块表面</b>转层 · 拖动<b>空白处</b>转视角 · 右键拖动也能转视角<br>
+      方向键 <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> 微调视角
+    </p>
+  </section>
+
+  <aside class="panel">
+    <div class="card">
+      <h1>3×3 魔方</h1>
+      <p>纯 CSS 3D + 手写矩阵运算，没有 Three.js 也没有 WebGL。26 个小方块各自记着一个 3×3 旋转矩阵。</p>
+      <div class="btns">
+        <button id="scrambleBtn" class="primary full">打乱</button>
+        <button id="resetBtn">复位</button>
+        <button id="viewBtn">正视角</button>
+      </div>
+      <div class="msg" id="msg">拖动任意一面就能转层</div>
+    </div>
+
+    <div class="card">
+      <h2>怎么玩</h2>
+      <ul class="ops">
+        <li>在方块表面按住往一个方向拖，那一层就会跟着转 90°</li>
+        <li>拖的是哪个方块，就转它所在的那一层；中间层也能单独转</li>
+        <li>拖空白区域可以绕着魔方看，不会打乱</li>
+        <li>六面各自纯色即复原，成绩会存在本地浏览器里</li>
+      </ul>
+    </div>
+  </aside>
+
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  var RAD = Math.PI / 180;
+
+  /* 六个面：v 是面的法线（局部坐标，CSS 里 y 轴朝下），base 是这块面片自身的朝向 */
+  var FACES = [
+    { v: [ 1, 0, 0], color: "#e03e2d", base: "rotateY(90deg)"  },  // 右 红
+    { v: [-1, 0, 0], color: "#ef8a2b", base: "rotateY(-90deg)" },  // 左 橙
+    { v: [ 0, 1, 0], color: "#f4cd3c", base: "rotateX(-90deg)" },  // 下 黄
+    { v: [ 0,-1, 0], color: "#f2f4f0", base: "rotateX(90deg)"  },  // 上 白
+    { v: [ 0, 0, 1], color: "#2fa85c", base: ""                },  // 前 绿
+    { v: [ 0, 0,-1], color: "#2d6fd8", base: "rotateY(180deg)" }   // 后 蓝
+  ];
+  var AXIS = ["X", "Y", "Z"];
+
+  /* ---------- 矩阵小工具（3×3，整数，行优先） ---------- */
+
+  function matApply(M, v) {
+    return [
+      M[0][0]*v[0] + M[0][1]*v[1] + M[0][2]*v[2],
+      M[1][0]*v[0] + M[1][1]*v[1] + M[1][2]*v[2],
+      M[2][0]*v[0] + M[2][1]*v[1] + M[2][2]*v[2]
+    ];
+  }
+  function matMul(A, B) {
+    var C = [[0,0,0],[0,0,0],[0,0,0]];
+    for (var i = 0; i < 3; i++)
+      for (var j = 0; j < 3; j++)
+        C[i][j] = A[i][0]*B[0][j] + A[i][1]*B[1][j] + A[i][2]*B[2][j];
+    return C;
+  }
+  /* 绕某根轴转 ±90°：sign 就是这根轴的方向符号 */
+  function rotMat(axis, sign) {
+    var s = sign, c = 0;
+    if (axis === 0) return [[1,0,0],[0,c,-s],[0,s,c]];
+    if (axis === 1) return [[c,0,s],[0,1,0],[-s,0,c]];
+    return [[c,-s,0],[s,c,0],[0,0,1]];
+  }
+  function mat3d(M) {
+    return "matrix3d(" + [
+      M[0][0], M[1][0], M[2][0], 0,
+      M[0][1], M[1][1], M[2][1], 0,
+      M[0][2], M[1][2], M[2][2], 0,
+      0, 0, 0, 1
+    ].join(",") + ")";
+  }
+  function cross(a, b) {
+    return [a[1]*b[2] - a[2]*b[1], a[2]*b[0] - a[0]*b[2], a[0]*b[1] - a[1]*b[0]];
+  }
+  /* 找出单位轴向量里唯一非零的那一维 */
+  function axisOf(v) {
+    var idx = -1;
+    for (var i = 0; i < 3; i++) {
+      if (Math.abs(v[i]) > 0.5) { if (idx >= 0) return -1; idx = i; }
+    }
+    return idx;
+  }
+
+  /* ---------- DOM ---------- */
+
+  var stageEl = document.getElementById("stage");
+  var sceneEl = document.getElementById("scene");
+  var movesEl = document.getElementById("moves");
+  var timeEl  = document.getElementById("time");
+  var bestEl  = document.getElementById("best");
+  var msgEl   = document.getElementById("msg");
+  var scrambleBtn = document.getElementById("scrambleBtn");
+  var resetBtn = document.getElementById("resetBtn");
+  var viewBtn  = document.getElementById("viewBtn");
+
+  var REDUCE = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var TURN_MS = REDUCE ? 1 : 170;
+
+  var S = 76;              // 单个小方块的边长（px），随窗口变
+  var cubies = [];
+  var viewX = -24, viewY = -30;
+
+  /* ---------- 建方块 ---------- */
+
+  function build() {
+    sceneEl.innerHTML = "";
+    cubies = [];
+
+    var core = document.createElement("div");
+    core.className = "core";
+    sceneEl.appendChild(core);
+
+    for (var x = -1; x <= 1; x++) {
+      for (var y = -1; y <= 1; y++) {
+        for (var z = -1; z <= 1; z++) {
+          if (x === 0 && y === 0 && z === 0) continue;   // 正中心那格看不见，省掉
+
+          var el = document.createElement("div");
+          el.className = "cubie";
+
+          var c = {
+            pos: [x, y, z],
+            home: [x, y, z],
+            m: [[1,0,0],[0,1,0],[0,0,1]],
+            el: el,
+            faces: [],
+            dirs: []          // 这块上贴了颜色的面（局部方向索引）
+          };
+
+          for (var i = 0; i < 6; i++) {
+            var f = FACES[i];
+            var face = document.createElement("div");
+            face.className = "face";
+            face.dataset.dir = i;     // 也写到 DOM 上，方便调试/测试
+            face.__c = c;
+            face.__dir = i;
+
+            // 只给朝外的那些面贴颜色
+            if (f.v[0]*x + f.v[1]*y + f.v[2]*z === 1) {
+              var st = document.createElement("div");
+              st.className = "sticker";
+              st.style.background = f.color;
+              face.appendChild(st);
+              c.dirs.push(i);
+            }
+            el.appendChild(face);
+            c.faces.push(face);
+          }
+
+          cubies.push(c);
+          sceneEl.appendChild(el);
+        }
+      }
+    }
+    layoutSize();
+    renderAll();
+  }
+
+  /* 尺寸变化时重新铺面片和位置（面的厚度偏移跟 S 有关） */
+  function layoutSize() {
+    document.documentElement.style.setProperty("--s", S + "px");
+    var half = (S / 2) + "px";        // 紧贴：相邻方块的内侧面共面，同色所以看不出 z-fighting
+    for (var i = 0; i < cubies.length; i++) {
+      var fs = cubies[i].faces;
+      for (var j = 0; j < fs.length; j++) {
+        var base = FACES[fs[j].__dir].base;
+        fs[j].style.transform = (base ? base + " " : "") + "translateZ(" + half + ")";
+      }
+    }
+  }
+
+  function cubieTransform(c, pre) {
+    var p = c.pos;
+    return (pre ? pre + " " : "") +
+      "translate3d(" + (p[0]*S) + "px," + (p[1]*S) + "px," + (p[2]*S) + "px) " +
+      mat3d(c.m);
+  }
+
+  function renderAll() {
+    for (var i = 0; i < cubies.length; i++) {
+      cubies[i].el.style.transform = cubieTransform(cubies[i], "");
+    }
+  }
+
+  function applyView() {
+    sceneEl.style.transform = "rotateX(" + viewX + "deg) rotateY(" + viewY + "deg)";
+  }
+
+  /* ---------- 转层动画 ---------- */
+
+  var anim = null;          // { axis, sign, group, R, t0, dur, cb, watch, user }
+  var queue = [];           // 打乱时的排队
+
+  function ease(t) { return t * t * (3 - 2 * t); }
+
+  function startTurn(axis, layer, sign, dur, cb, user) {
+    if (anim) return false;
+    var R = rotMat(axis, sign);
+    var group = [];
+    for (var i = 0; i < cubies.length; i++) {
+      if (cubies[i].pos[axis] === layer) group.push(cubies[i]);
+    }
+    anim = {
+      axis: axis, sign: sign, group: group, R: R,
+      t0: (window.performance && performance.now) ? performance.now() : Date.now(),
+      dur: dur, cb: cb, user: !!user, done: false
+    };
+    // 兜底：万一 rAF 被节流（后台标签页 / 某些无头环境），到点直接落地
+    anim.watch = setTimeout(function () { finishTurn(); }, dur + 120);
+    requestAnimationFrame(step);
+    return true;
+  }
+
+  function step(now) {
+    if (!anim || anim.done) return;
+    var t = Math.min(1, (now - anim.t0) / anim.dur);
+    if (t >= 1) { finishTurn(); return; }
+    var pre = "rotate" + AXIS[anim.axis] + "(" + (anim.sign * 90 * ease(t)) + "deg)";
+    for (var i = 0; i < anim.group.length; i++) {
+      anim.group[i].el.style.transform = cubieTransform(anim.group[i], pre);
+    }
+    requestAnimationFrame(step);
+  }
+
+  function finishTurn() {
+    if (!anim || anim.done) return;
+    var a = anim;
+    a.done = true;
+    clearTimeout(a.watch);
+
+    for (var i = 0; i < a.group.length; i++) {
+      var c = a.group[i];
+      c.pos = matApply(a.R, c.pos);      // 位置转过去
+      c.m = matMul(a.R, c.m);            // 朝向也跟着转
+      c.el.style.transform = cubieTransform(c, "");
+    }
+    anim = null;
+
+    if (a.user) {
+      moves++;
+      movesEl.textContent = moves;
+      if (!timer) startTimer();
+      if (isSolved()) onSolved();
+    }
+    if (a.cb) a.cb();
+  }
+
+  /* ---------- 是否复原 ---------- */
+
+  function isSolved() {
+    var seen = {};
+    for (var i = 0; i < cubies.length; i++) {
+      var c = cubies[i];
+      for (var k = 0; k < c.dirs.length; k++) {
+        var idx = c.dirs[k];
+        var w = matApply(c.m, FACES[idx].v);      // 这张贴纸现在朝哪个方向
+        var key = w.join(",");
+        if (seen[key] === undefined) seen[key] = FACES[idx].color;
+        else if (seen[key] !== FACES[idx].color) return false;
+      }
+    }
+    return true;
+  }
+
+  /* ---------- 计时 / 成绩 ---------- */
+
+  var timer = null, t0 = 0, moves = 0;
+  var armed = false;        // 当前这一局是不是从「打乱」开始的
+
+  function fmt(s) { return Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2); }
+  function startTimer() {
+    if (timer) return;
+    t0 = Date.now();
+    timer = setInterval(function () {
+      timeEl.textContent = fmt(Math.floor((Date.now() - t0) / 1000));
+    }, 250);
+  }
+  function stopTimer() { if (timer) { clearInterval(timer); timer = null; } }
+  function resetStats() {
+    stopTimer();
+    moves = 0; t0 = 0;
+    armed = false;
+    movesEl.textContent = "0";
+    timeEl.textContent = "0:00";
+    stageEl.classList.remove("solved");
+  }
+
+  function loadBest() {
+    try {
+      var v = localStorage.getItem("cube-best");
+      if (v) bestEl.textContent = fmt(parseInt(v, 10));
+    } catch (e) {}
+  }
+  function saveBest(sec) {
+    try {
+      var old = parseInt(localStorage.getItem("cube-best") || "0", 10);
+      if (!old || sec < old) {
+        localStorage.setItem("cube-best", String(sec));
+        bestEl.textContent = fmt(sec);
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+
+  function setMsg(text, win) {
+    msgEl.textContent = text;
+    msgEl.classList.toggle("win", !!win);
+  }
+
+  function onSolved() {
+    stopTimer();
+    var sec = Math.floor((Date.now() - t0) / 1000);
+    stageEl.classList.add("solved");
+    // 只有从「打乱」开始的一局才记成绩，否则随便转几下也能刷出 0:00
+    if (!armed) {
+      setMsg("已经复原了 · 点「打乱」开始一局", true);
+      return;
+    }
+    armed = false;
+    var rec = saveBest(sec);
+    setMsg((rec ? "🎉 新纪录！" : "🎉 复原完成 · ") + "用时 " + fmt(sec) + " · " + moves + " 步", true);
+  }
+
+  /* ---------- 拖拽 ---------- */
+
+  var drag = null;
+
+  /* 把一个立体方向投到屏幕上：返回 [x 右, y 下]，只关心方向不关心长度 */
+  function viewProj(v) {
+    var cx = Math.cos(viewX * RAD), sx = Math.sin(viewX * RAD);
+    var cy = Math.cos(viewY * RAD), sy = Math.sin(viewY * RAD);
+    var x1 = cy * v[0] + sy * v[2];
+    var y1 = v[1];
+    var z1 = -sy * v[0] + cy * v[2];
+    return [x1, cx * y1 - sx * z1];
+  }
+
+  stageEl.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+
+  stageEl.addEventListener("pointerdown", function (e) {
+    if (anim || queue.length) return;
+
+    var faceEl = e.target && e.target.closest ? e.target.closest(".face") : null;
+    var wantOrbit = e.button === 2 || e.shiftKey || !faceEl;
+
+    if (wantOrbit) {
+      drag = { mode: "orbit", x0: e.clientX, y0: e.clientY, rx: viewX, ry: viewY };
+    } else {
+      drag = {
+        mode: "turn", x0: e.clientX, y0: e.clientY,
+        c: faceEl.__c, dir: FACES[faceEl.__dir].v, decided: false
+      };
+    }
+    stageEl.classList.add("is-dragging");
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+    e.preventDefault();
+  });
+
+  function onMove(e) {
+    if (!drag) return;
+    var dx = e.clientX - drag.x0;
+    var dy = e.clientY - drag.y0;
+
+    if (drag.mode === "orbit") {
+      viewY = drag.ry + dx * 0.42;
+      viewX = Math.max(-88, Math.min(88, drag.rx - dy * 0.42));
+      applyView();
+      return;
+    }
+
+    if (drag.decided) return;
+    if (Math.abs(dx) < 9 && Math.abs(dy) < 9) return;   // 太小先不算，避免手抖
+
+    drag.decided = true;
+    decideTurn(drag, dx, dy);
+  }
+
+  function onUp() {
+    drag = null;
+    stageEl.classList.remove("is-dragging");
+    window.removeEventListener("pointermove", onMove);
+    window.removeEventListener("pointerup", onUp);
+    window.removeEventListener("pointercancel", onUp);
+  }
+
+  /*
+    核心：把屏幕上的拖动方向，翻译成「绕哪根轴转、转哪一层、往哪边转」
+    接触点法线 n、拖动方向 u 都在方块局部坐标里；
+    想让接触点朝 u 移动，需要绕 k = n × u 转，因为 k × n ≈ u。
+  */
+  function decideTurn(d, dx, dy) {
+    var n = matApply(d.c.m, d.dir);          // 被拖的那面，现在朝哪个方向
+    var ax = axisOf(n);
+    if (ax < 0) return false;
+
+    var others = [];
+    for (var i = 0; i < 3; i++) if (i !== ax) others.push(i);
+
+    // 在面内两个候选轴 × 正反里，找屏幕投影和拖动方向最贴的那个
+    var best = null;
+    for (var k = 0; k < 2; k++) {
+      for (var sg = -1; sg <= 1; sg += 2) {
+        var u = [0, 0, 0];
+        u[others[k]] = sg;
+        var sp = viewProj(u);
+        var score = sp[0] * dx + sp[1] * dy;
+        if (!best || score > best.score) best = { score: score, u: u };
+      }
+    }
+    if (!best || best.score <= 0) return false;
+
+    var axisVec = cross(n, best.u);
+    var ki = axisOf(axisVec);
+    if (ki < 0) return false;
+
+    var sign = axisVec[ki] > 0 ? 1 : -1;
+    startTurn(ki, d.c.pos[ki], sign, TURN_MS, null, true);
+    setMsg("继续 · 拖同一层可以连续转");
+    return true;
+  }
+
+  /* ---------- 打乱 / 复位 / 视角 ---------- */
+
+  function scramble() {
+    if (anim || queue.length) return;
+    resetStats();
+    setMsg("打乱中…");
+    scrambleBtn.disabled = true;
+
+    var lastAxis = -1;
+    for (var i = 0; i < 22; i++) {
+      var ax;
+      do { ax = Math.floor(Math.random() * 3); } while (ax === lastAxis);
+      lastAxis = ax;
+      queue.push([ax, Math.random() < 0.5 ? -1 : 1, Math.random() < 0.5 ? -1 : 1]);
+    }
+    runQueue();
+  }
+
+  function runQueue() {
+    if (!queue.length) {
+      scrambleBtn.disabled = false;
+      armed = true;
+      setMsg("打乱完成 · 22 步，开始吧");
+      return;
+    }
+    var t = queue.shift();
+    startTurn(t[0], t[1], t[2], REDUCE ? 1 : 95, runQueue, false);
+  }
+
+  function resetCube() {
+    if (anim) { clearTimeout(anim.watch); anim = null; }
+    queue.length = 0;
+    for (var i = 0; i < cubies.length; i++) {
+      var c = cubies[i];
+      c.pos = c.home.slice();
+      c.m = [[1,0,0],[0,1,0],[0,0,1]];
+    }
+    renderAll();
+    resetStats();
+    armed = false;
+    scrambleBtn.disabled = false;
+    setMsg("已复位 · 六个面都归位了");
+  }
+
+  function resetView() {
+    viewX = -24; viewY = -30;
+    applyView();
+  }
+
+  scrambleBtn.addEventListener("click", scramble);
+  resetBtn.addEventListener("click", resetCube);
+  viewBtn.addEventListener("click", resetView);
+
+  document.addEventListener("keydown", function (e) {
+    var step = 6;
+    if (e.key === "ArrowLeft")  { viewY -= step; applyView(); e.preventDefault(); }
+    else if (e.key === "ArrowRight") { viewY += step; applyView(); e.preventDefault(); }
+    else if (e.key === "ArrowUp")    { viewX = Math.max(-88, viewX - step); applyView(); e.preventDefault(); }
+    else if (e.key === "ArrowDown")  { viewX = Math.min(88, viewX + step); applyView(); e.preventDefault(); }
+  });
+
+  /* ---------- 自适应尺寸 ---------- */
+
+  function fit() {
+    var w = stageEl.clientWidth - 40;
+    var h = window.innerHeight - 240;
+    // 立方体转起来之后的轮廓宽度约等于 4.1 倍边长（cos30 + sin30），所以除数要留出余量
+    var s = Math.floor(Math.min(w, Math.max(h, 200)) / 4.2);
+    s = Math.max(40, Math.min(88, s));
+    if (s !== S) {
+      S = s;
+      layoutSize();
+      renderAll();
+    }
+  }
+
+  var rt = null;
+  window.addEventListener("resize", function () {
+    clearTimeout(rt);
+    rt = setTimeout(fit, 120);
+  });
+
+  /* ---------- 启动 ---------- */
+
+  build();
+  applyView();
+  fit();
+  loadBest();
+
+  // 给控制台调试留个入口（也方便自动化测试）
+  window.cubeDebug = {
+    turn: function (axis, layer, sign) { return startTurn(axis, layer, sign, TURN_MS, null, true); },
+    solved: isSolved,
+    reset: resetCube,
+    cubies: cubies
+  };
+})();
+</script>
+</body>
+</html>
