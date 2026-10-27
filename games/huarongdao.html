@@ -18,7 +18,10 @@
     --text-dim: #a0a3b8;
   }
 
-  html, body { height: 100%; }
+  /* 只给 html 高度，body 靠 min-height 撑开；
+     若 body 固定 height:100% + flex 居中，内容超过一屏时会被上下同时裁掉，
+     且上方溢出部分永远滚动不到（手机上看不到棋盘最上面一行）。 */
+  html { height: 100%; }
 
   body {
     font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
@@ -27,8 +30,6 @@
     background-attachment: fixed;
     color: var(--text);
     display: flex;
-    align-items: center;
-    justify-content: center;
     padding: 16px;
     overscroll-behavior: none;
   }
@@ -40,6 +41,9 @@
     flex-wrap: wrap;
     justify-content: center;
     max-width: 900px;
+    /* 用 auto 外边距居中：空间够时居中，内容超高时自动归零、从头开始排，
+       不会出现"顶部被裁掉又滚不回去"的情况 */
+    margin: auto;
   }
 
   /* 左侧：棋盘 */
@@ -272,6 +276,9 @@
   input[type="file"] { display: none; }
 
   @media (max-width: 820px) {
+    /* 左上角的「← 游戏厅」是固定定位，手机上棋盘占满宽度，
+       没有这段内边距它就会压住棋盘第一行 */
+    body { padding: 58px 12px 20px; }
     .side { width: min(480px, 88vw); }
     .preview { aspect-ratio: 4/1; }
     .tips.hide-on-mobile { display: none; }
