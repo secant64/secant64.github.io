@@ -1,7 +1,16 @@
 # 小游戏厅
 
+**线上地址：https://secant64.github.io** （GitHub Pages，推送即自动发布）
+
 一个纯前端的网页小游戏合集：首页是游戏列表，点进去直接玩。
 没有框架、没有构建步骤、没有后端 —— 全部是静态文件，丢进 GitHub Pages 就能用。
+
+| 页面 | 地址 |
+|---|---|
+| 游戏厅首页 | https://secant64.github.io |
+| 合成大西瓜 | https://secant64.github.io/games/daxigua.html |
+| 图片华容道 | https://secant64.github.io/games/huarongdao.html |
+| 3×3 魔方 | https://secant64.github.io/games/cube.html |
 
 ## 目录结构
 
