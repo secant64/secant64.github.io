@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>图片华容道 · 5×5 滑块拼图</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --bg1: #1a1d2e;
+    --bg2: #2d1b3d;
+    --panel: rgba(255, 255, 255, 0.08);
+    --panel-border: rgba(255, 255, 255, 0.15);
+    --accent: #ffb347;
+    --accent2: #ff6b9d;
+    --text: #f0f0f5;
+    --text-dim: #a0a3b8;
+  }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--bg1), var(--bg2));
+    background-attachment: fixed;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    overscroll-behavior: none;
+  }
+
+  .container {
+    display: flex;
+    gap: 28px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 900px;
+  }
+
+  /* 左侧：棋盘 */
+  .board-wrap { position: relative; }
+
+  #board {
+    width: min(480px, 88vw);
+    aspect-ratio: 1;
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 16px;
+    padding: 10px;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(5, 1fr);
+    gap: 6px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* 每个格子固定存在，滑块在里面移动 —— 移动时只挪 DOM 节点，不重建 */
+  .cell {
+    position: relative;
+    border-radius: 10px;
+    border: 1.5px dashed rgba(255,255,255,0.14);
+    overflow: hidden;
+  }
+  .cell .hint {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.25);
+    font-size: 12px;
+    pointer-events: none;
+  }
+
+  .tile {
+    position: absolute;
+    inset: 0;
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    background-size: 500% 500%;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.35);
+    transition: transform 0.12s ease;
+    touch-action: manipulation;
+  }
+  .tile:active { transform: scale(0.95); }
+  .tile .num {
+    position: absolute;
+    top: 3px; left: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.85);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+    pointer-events: none;
+  }
+  /* 胜利时淡出数字 */
+  .tile.won .num { opacity: 0; transition: opacity 0.5s ease; }
+
+  /* 右侧面板 */
+  .side {
+    width: 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 16px;
+  }
+
+  h1 { font-size: 22px; letter-spacing: 1px; }
+  h1 span {
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .stats { display: flex; gap: 10px; }
+  .stat {
+    flex: 1;
+    text-align: center;
+    background: rgba(0,0,0,0.25);
+    border-radius: 10px;
+    padding: 10px 6px;
+  }
+  .stat .val { font-size: 22px; font-weight: 700; color: var(--accent); }
+  .stat .lbl { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--panel-border);
+    background: rgba(255,255,255,0.1);
+    color: var(--text);
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    font-family: inherit;
+    width: 100%;
+    touch-action: manipulation;
+  }
+  .btn:hover { background: rgba(255,255,255,0.18); }
+  .btn.primary {
+    background: linear-gradient(90deg, #ff9a44, #ff6b9d);
+    border: none;
+    color: #fff;
+    font-weight: 700;
+  }
+  .btn.solve {
+    background: linear-gradient(90deg, #4facfe, #00f2fe);
+    border: none;
+    color: #06304a;
+    font-weight: 700;
+  }
+  .btn.solve.stop {
+    background: linear-gradient(90deg, #ff7a7a, #ff4d6d);
+    color: #fff;
+  }
+  .btn[disabled] { opacity: 0.55; pointer-events: none; }
+
+  .btn-row { display: flex; gap: 8px; }
+
+  .solve-info {
+    font-size: 12px;
+    color: var(--text-dim);
+    text-align: center;
+    min-height: 17px;
+    line-height: 1.5;
+  }
+  .solve-info b { color: var(--accent); }
+
+  .preview {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 10px;
+    background-size: cover;
+    background-position: center;
+    background-color: rgba(0,0,0,0.3);
+    border: 1px solid var(--panel-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-dim);
+    font-size: 12px;
+    position: relative;
+  }
+  .preview .tag {
+    position: absolute;
+    bottom: 6px; right: 6px;
+    background: rgba(0,0,0,0.55);
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+  }
+
+  .tips { font-size: 12px; color: var(--text-dim); line-height: 1.7; }
+
+  /* 默认占位（无图时） */
+  #board.placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 14px;
+  }
+  #board.placeholder .big { font-size: 44px; }
+
+  /* 看原图：独立图层盖在棋盘上，不重建棋盘 */
+  #peek {
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    background-size: cover;
+    background-position: center;
+    display: none;
+    z-index: 5;
+  }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  .overlay.show { opacity: 1; pointer-events: auto; }
+
+  .win-card {
+    background: linear-gradient(160deg, #2a2d44, #3d2547);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 20px;
+    padding: 32px 40px;
+    text-align: center;
+    transform: scale(0.85);
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    max-width: 320px;
+  }
+  .overlay.show .win-card { transform: scale(1); }
+  .win-card .emoji { font-size: 52px; }
+  .win-card h2 {
+    margin: 10px 0 4px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .win-card p { color: var(--text-dim); font-size: 14px; margin-bottom: 20px; }
+
+  input[type="file"] { display: none; }
+
+  @media (max-width: 820px) {
+    .side { width: min(480px, 88vw); }
+    .preview { aspect-ratio: 4/1; }
+    .tips.hide-on-mobile { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<a href="../index.html" style="position:fixed;top:14px;left:14px;z-index:50;display:inline-flex;align-items:center;gap:5px;padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.18);color:#e8e8f0;font-size:13px;text-decoration:none;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);">← 游戏厅</a>
+
+<div class="container">
+  <!-- 棋盘 -->
+  <div class="board-wrap">
+    <div id="board" class="placeholder">
+      <div class="big">🖼️</div>
+      <div>点击上传图片，开始游戏</div>
+    </div>
+    <div id="peek"></div>
+  </div>
+
+  <!-- 侧栏 -->
+  <div class="side">
+    <div class="card">
+      <h1>🧩 <span>图片华容道</span></h1>
+      <p class="tips" style="margin-top:6px;">5×5 数字滑块 · 打乱后还原整张图片</p>
+    </div>
+
+    <div class="card">
+      <div class="stats">
+        <div class="stat"><div class="val" id="moves">0</div><div class="lbl">步数</div></div>
+        <div class="stat"><div class="val" id="time">0:00</div><div class="lbl">用时</div></div>
+      </div>
+    </div>
+
+    <div class="card" style="display:flex; flex-direction:column; gap:10px;">
+      <input type="file" id="fileInput" accept="image/*">
+      <button class="btn primary" id="uploadBtn">📷 选择图片</button>
+      <div class="btn-row">
+        <button class="btn" id="shuffleBtn">🔀 打乱</button>
+        <button class="btn" id="peekBtn">👁 看原图</button>
+      </div>
+      <button class="btn solve" id="solveBtn">✨ 一键自动还原</button>
+      <div class="solve-info" id="solveInfo"></div>
+    </div>
+
+    <div class="card">
+      <div class="preview" id="preview">原图预览</div>
+    </div>
+
+    <div class="card tips hide-on-mobile">
+      💡 <b>玩法</b>：点击与空格相邻的滑块使其滑动，将打乱的图片拼回原样。<br>
+      ⌨️ 电脑上也可以用<b>方向键</b>移动滑块。<br>
+      👁 按住「看原图」可临时显示目标效果。<br>
+      ✨ <b>一键自动还原</b>：搜索解法并自动走完，接近完成时给的是理论最少步数；计算/播放中点一下即可停止。
+    </div>
+  </div>
+</div>
+
+<!-- 胜利弹窗 -->
+<div class="overlay" id="overlay">
+  <div class="win-card">
+    <div class="emoji">🎉</div>
+    <h2>拼图完成！</h2>
+    <p id="winText"></p>
+    <button class="btn primary" id="againBtn" style="width:auto; padding:10px 28px;">再来一局</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var N = 5;
+  var TOTAL = N * N;
+  var EMPTY = TOTAL - 1;
+
+  var boardEl   = document.getElementById("board");
+  var peekEl    = document.getElementById("peek");
+  var movesEl   = document.getElementById("moves");
+  var timeEl    = document.getElementById("time");
+  var previewEl = document.getElementById("preview");
+  var overlayEl = document.getElementById("overlay");
+  var winTextEl = document.getElementById("winText");
+  var fileInput = document.getElementById("fileInput");
+
+  var grid = [];        // grid[r][c] = 滑块值 (0..24, 24=空)
+  var cellEls = [];     // 25 个固定格子 div
+  var tileEls = {};     // value -> tile 元素
+  var playing = false;
+  var started = false;
+  var moves = 0;
+  var startTime = 0;
+  var timerId = null;
+  var bgUrl = null;
+
+  /* ---------- 工具 ---------- */
+
+  function solvedGrid() {
+    var g = [];
+    for (var r = 0; r < N; r++) {
+      g[r] = [];
+      for (var c = 0; c < N; c++) g[r][c] = r * N + c;
+    }
+    return g;
+  }
+
+  function findEmpty(g) {
+    for (var r = 0; r < N; r++)
+      for (var c = 0; c < N; c++)
+        if (g[r][c] === EMPTY) return [r, c];
+  }
+
+  function findTile(v) {
+    for (var r = 0; r < N; r++)
+      for (var c = 0; c < N; c++)
+        if (grid[r][c] === v) return [r, c];
+    return null;
+  }
+
+  function isSolved(g) {
+    for (var r = 0; r < N; r++)
+      for (var c = 0; c < N; c++)
+        if (g[r][c] !== r * N + c) return false;
+    return true;
+  }
+
+  // 从完成态随机合法滑动 300 步，保证可解
+  function shuffleGrid() {
+    var g = solvedGrid();
+    var er = N - 1, ec = N - 1, prev = null;
+    for (var i = 0; i < 300; i++) {
+      var options = [];
+      if (er > 0) options.push([er - 1, ec]);
+      if (er < N - 1) options.push([er + 1, ec]);
+      if (ec > 0) options.push([er, ec - 1]);
+      if (ec < N - 1) options.push([er, ec + 1]);
+      var cand = options.filter(function (p) {
+        return !prev || p[0] !== prev[0] || p[1] !== prev[1];
+      });
+      var pick = cand[Math.floor(Math.random() * cand.length)];
+      g[er][ec] = g[pick[0]][pick[1]];
+      g[pick[0]][pick[1]] = EMPTY;
+      prev = [er, ec];
+      er = pick[0]; ec = pick[1];
+    }
+    if (isSolved(g)) return shuffleGrid();
+    return g;
+  }
+
+  /* ---------- 图片压缩：上传的大图先缩到 1080px 正方形，减少内存和绘制开销 ---------- */
+
+  function compressImage(file, callback) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      var img = new Image();
+      img.onload = function () {
+        var MAX = 1080;
+        var w = img.naturalWidth, h = img.naturalHeight;
+        // 中心裁成正方形（棋盘是正方形，避免拉伸变形），再缩放
+        var side = Math.min(w, h);
+        var scale = Math.min(1, MAX / side);
+        var cw = Math.round(side * scale);
+        var sx = (w - side) / 2, sy = (h - side) / 2;
+        var canvas = document.createElement("canvas");
+        canvas.width = cw; canvas.height = cw;
+        var ctx = canvas.getContext("2d");
+        ctx.drawImage(img, sx, sy, side, side, 0, 0, cw, cw);
+        try {
+          callback(canvas.toDataURL("image/jpeg", 0.85));
+        } catch (e) {
+          callback(reader.result); // 极端情况降级用原图
+        }
+      };
+      img.onerror = function () { callback(reader.result); };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  /* ---------- 渲染（一次性建好 25 个格子 + 24 个滑块） ---------- */
+
+  function tileBgPos(value) {
+    var row = Math.floor(value / N);
+    var col = value % N;
+    return (col * 100 / (N - 1)) + "% " + (row * 100 / (N - 1)) + "%";
+  }
+
+  function buildBoard() {
+    boardEl.classList.remove("placeholder");
+    boardEl.innerHTML = "";
+    cellEls = [];
+    tileEls = {};
+
+    for (var i = 0; i < TOTAL; i++) {
+      var cell = document.createElement("div");
+      cell.className = "cell";
+      var hint = document.createElement("div");
+      hint.className = "hint";
+      hint.textContent = i + 1;
+      cell.appendChild(hint);
+      boardEl.appendChild(cell);
+      cellEls.push(cell);
+    }
+
+    for (var v = 0; v < TOTAL - 1; v++) {
+      var t = document.createElement("div");
+      t.className = "tile";
+      t.value = v;                       // ← 关键：点击时靠它找回自己是谁，漏了这行点击就没反应
+      t.style.backgroundImage = 'url("' + bgUrl + '")';
+      t.style.backgroundPosition = tileBgPos(v);
+      var num = document.createElement("div");
+      num.className = "num";
+      num.textContent = v + 1;
+      t.appendChild(num);
+      tileEls[v] = t;
+    }
+  }
+
+  // 按当前 grid 把滑块放进对应格子（只在开局/打乱时调用）
+  function layoutTiles() {
+    for (var i = 0; i < TOTAL; i++) {
+      var r = Math.floor(i / N), c = i % N;
+      var v = grid[r][c];
+      var cell = cellEls[i];
+      var old = cell.firstChild;
+      while (old) {
+        var next = old.nextSibling;
+        if (old.className === "tile") cell.removeChild(old);
+        old = next;
+      }
+      if (v !== EMPTY) cell.appendChild(tileEls[v]);
+    }
+    // 给滑块绑定点击（每次开局绑一次）
+    for (var key in tileEls) {
+      (function (t) {
+        t.onclick = function () {
+          if (busy) return;
+          var pos = findTile(t.value);
+          if (pos) tryMove(pos[0], pos[1]);
+        };
+      })(tileEls[key]);
+    }
+  }
+
+  /* ---------- 移动：只挪一个 DOM 节点，性能最优 ---------- */
+
+  function tryMove(r, c) {
+    if (!playing) return;
+    var emptyPos = findEmpty(grid);
+    var er = emptyPos[0], ec = emptyPos[1];
+    if (Math.abs(er - r) + Math.abs(ec - c) !== 1) return;
+
+    var v = grid[r][c];
+    grid[er][ec] = v;
+    grid[r][c] = EMPTY;
+
+    // DOM：把滑块节点挪进空格
+    cellEls[er * N + ec].appendChild(tileEls[v]);
+
+    moves++;
+    movesEl.textContent = moves;
+
+    if (!started) { started = true; startTimer(); }
+
+    if (isSolved(grid)) win();
+  }
+
+  function moveByDir(dir) {
+    if (!playing) return;
+    var emptyPos = findEmpty(grid);
+    var er = emptyPos[0], ec = emptyPos[1];
+    var tr = er, tc = ec;
+    if (dir === "ArrowUp")    tr = er + 1;
+    if (dir === "ArrowDown")  tr = er - 1;
+    if (dir === "ArrowLeft")  tc = ec + 1;
+    if (dir === "ArrowRight") tc = ec - 1;
+    if (tr < 0 || tr >= N || tc < 0 || tc >= N) return;
+    tryMove(tr, tc);
+  }
+
+  function startTimer() {
+    startTime = Date.now();
+    timerId = setInterval(function () {
+      var s = Math.floor((Date.now() - startTime) / 1000);
+      timeEl.textContent = Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2);
+    }, 1000);
+  }
+
+  function stopTimer() {
+    if (timerId) { clearInterval(timerId); timerId = null; }
+  }
+
+  function win() {
+    playing = false;
+    stopTimer();
+    // 淡出数字，展示完整图效果
+    for (var key in tileEls) tileEls[key].classList.add("won");
+    var s = Math.floor((Date.now() - startTime) / 1000);
+    winTextEl.textContent = "用时 " + Math.floor(s / 60) + " 分 " + (s % 60) + " 秒 · 共 " + moves + " 步";
+    setTimeout(function () { overlayEl.classList.add("show"); }, 700);
+  }
+
+  /* ================= 自动求解器 =================
+     1) IDA* —— 找到即为「最少步数」最优解
+     2) 加权 A* —— 退而求其次，快速给出近似最优解
+     两者都限时/限节点，避免手机卡死
+  ================================================ */
+
+  var busy = false;             // 求解/动画期间屏蔽手动操作
+  var solveInfoEl = document.getElementById("solveInfo");
+
+  function flatGrid() {
+    var f = [];
+    for (var r = 0; r < N; r++)
+      for (var c = 0; c < N; c++) f[r * N + c] = grid[r][c];
+    return f;
+  }
+
+  // 曼哈顿距离 + 线性冲突（可采纳启发式，保证 IDA* 最优）
+  function heur(g) {
+    var h = 0, i, r, c, v, tr, tc;
+    for (i = 0; i < TOTAL; i++) {
+      v = g[i];
+      if (v === EMPTY) continue;
+      tr = (v / N) | 0; tc = v % N;
+      r = (i / N) | 0;  c = i % N;
+      h += Math.abs(r - tr) + Math.abs(c - tc);
+    }
+    var a, b, list;
+    for (r = 0; r < N; r++) {           // 行冲突
+      list = [];
+      for (c = 0; c < N; c++) {
+        v = g[r * N + c];
+        if (v !== EMPTY && ((v / N) | 0) === r) list.push(v % N);
+      }
+      for (a = 0; a < list.length; a++)
+        for (b = a + 1; b < list.length; b++)
+          if (list[a] > list[b]) h += 2;
+    }
+    for (c = 0; c < N; c++) {           // 列冲突
+      list = [];
+      for (r = 0; r < N; r++) {
+        v = g[r * N + c];
+        if (v !== EMPTY && v % N === c) list.push((v / N) | 0);
+      }
+      for (a = 0; a < list.length; a++)
+        for (b = a + 1; b < list.length; b++)
+          if (list[a] > list[b]) h += 2;
+    }
+    return h;
+  }
+
+  function keyOf(g) {
+    var s = "";
+    for (var i = 0; i < TOTAL; i++) s += String.fromCharCode(g[i]);
+    return s;
+  }
+
+  // 移动方向：0=上 1=下 2=左 3=右（指「空格」的移动方向）
+  function neighborIndex(e, d) {
+    var r = (e / N) | 0, c = e % N;
+    if (d === 0 && r > 0)     return e - N;
+    if (d === 1 && r < N - 1) return e + N;
+    if (d === 2 && c > 0)     return e - 1;
+    if (d === 3 && c < N - 1) return e + 1;
+    return -1;
+  }
+
+  /* ---------- IDA*（最优解） ---------- */
+  function idaSolve(start, maxNodes, maxMs) {
+    var t0 = Date.now();
+    var path = [];
+    var nodes = 0;
+    var bound = heur(start);
+    var LIMIT = 70;   // 超过这个深度就放弃，改走 A*
+
+    function dfs(g, e, gc, bound, lastDir) {
+      var h = heur(g);
+      var f = gc + h;
+      if (f > bound) return f;
+      if (h === 0) return -1;
+      if (++nodes > maxNodes) return Infinity;
+      if ((nodes & 1023) === 0 && Date.now() - t0 > maxMs) return Infinity;
+
+      var min = Infinity, d, ne, t, tmp;
+      for (d = 0; d < 4; d++) {
+        if (d === (lastDir ^ 1)) continue;      // 不走回头路
+        ne = neighborIndex(e, d);
+        if (ne < 0) continue;
+        tmp = g[e]; g[e] = g[ne]; g[ne] = tmp;  // 交换空格与相邻块
+        path.push(d);
+        t = dfs(g, ne, gc + 1, bound, d);
+        if (t === -1) return -1;                // 找到，path 即解法
+        path.pop();
+        tmp = g[e]; g[e] = g[ne]; g[ne] = tmp;
+        if (t < min) min = t;
+      }
+      return min;
+    }
+
+    var work = start.slice();
+    while (true) {
+      var t = dfs(work, work.indexOf(EMPTY), 0, bound, -1);
+      if (t === -1) return path.slice();
+      if (t === Infinity || t > LIMIT) return null;
+      bound = t;
+    }
+  }
+
+  /* ---------- 最小堆 ---------- */
+  function MinHeap() { this.a = []; }
+  function hcmp(x, y) { return x.f !== y.f ? x.f - y.f : x.h - y.h; }
+  MinHeap.prototype.push = function (f, h, state, key, g, e) {
+    var a = this.a, i = a.length, t;
+    a.push({ f: f, h: h, state: state, key: key, g: g, e: e });
+    while (i > 0) {
+      var p = (i - 1) >> 1;
+      if (hcmp(a[i], a[p]) < 0) { t = a[i]; a[i] = a[p]; a[p] = t; i = p; }
+      else break;
+    }
+  };
+  MinHeap.prototype.pop = function () {
+    var a = this.a, top = a[0], last = a.pop(), i, n, l, r2, m, t;
+    if (a.length) {
+      a[0] = last; i = 0; n = a.length;
+      while (true) {
+        l = 2 * i + 1; r2 = l + 1; m = i;
+        if (l < n && hcmp(a[l], a[m]) < 0) m = l;
+        if (r2 < n && hcmp(a[r2], a[m]) < 0) m = r2;
+        if (m === i) break;
+        t = a[i]; a[i] = a[m]; a[m] = t; i = m;
+      }
+    }
+    return top;
+  };
+
+  /* ---------- 加权 A*：weight 越小越接近最优，但越慢 ----------
+     做成可分片执行的对象，每次只算 26ms 就交还主线程，手机不卡顿 */
+  function AStarRunner(start, w, maxNodes, maxMs) {
+    this.w = w; this.maxNodes = maxNodes; this.maxMs = maxMs;
+    this.t0 = Date.now();
+    this.bestG = Object.create(null);
+    this.parent = Object.create(null);
+    this.pmove = Object.create(null);
+    this.startKey = keyOf(start);
+    this.bestG[this.startKey] = 0;
+    var h0 = heur(start);
+    this.heap = new MinHeap();
+    this.heap.push(w * h0, h0, start.slice(), this.startKey, 0, start.indexOf(EMPTY));
+    this.nodes = 0;
+  }
+
+  AStarRunner.prototype.advance = function (sliceMs) {
+    var sliceEnd = Date.now() + sliceMs;
+    while (this.heap.a.length) {
+      var cur = this.heap.pop();
+      if (cur.g > this.bestG[cur.key]) continue;      // 过期节点
+      if (cur.h === 0) {                              // 到达目标
+        var path = [], k = cur.key;
+        while (k !== this.startKey) { path.push(this.pmove[k]); k = this.parent[k]; }
+        return { done: true, path: path.reverse() };
+      }
+      if (++this.nodes > this.maxNodes) return { done: true, path: null };
+      if ((this.nodes & 255) === 0 && Date.now() - this.t0 > this.maxMs) return { done: true, path: null };
+
+      for (var d = 0; d < 4; d++) {
+        var ne = neighborIndex(cur.e, d);
+        if (ne < 0) continue;
+        var ns = cur.state.slice();
+        ns[cur.e] = ns[ne]; ns[ne] = EMPTY;
+        var nk = keyOf(ns);
+        var ng = cur.g + 1;
+        if (this.bestG[nk] === undefined || ng < this.bestG[nk]) {
+          this.bestG[nk] = ng; this.parent[nk] = cur.key; this.pmove[nk] = d;
+          var nh = heur(ns);
+          this.heap.push(ng + this.w * nh, nh, ns, nk, ng, ne);
+        }
+      }
+      if (Date.now() >= sliceEnd) return { done: false };
+    }
+    return { done: true, path: null };
+  };
+
+  // 去掉解法里绕圈子的片段（回到曾经出现过的局面 = 白走）
+  function shorten(start, path) {
+    var changed = true, guard = 0;
+    while (changed && guard++ < 300) {
+      changed = false;
+      var seen = Object.create(null);
+      var states = [start.slice()];
+      seen[keyOf(states[0])] = 0;
+      for (var i = 0; i < path.length; i++) {
+        var s = states[states.length - 1].slice();
+        var e = s.indexOf(EMPTY), ne = neighborIndex(e, path[i]);
+        if (ne < 0) break;
+        s[e] = s[ne]; s[ne] = EMPTY;
+        var k = keyOf(s);
+        if (seen[k] !== undefined) {
+          path.splice(seen[k], i - seen[k] + 1);
+          changed = true;
+          break;
+        }
+        seen[k] = states.length;
+        states.push(s);
+      }
+    }
+    return path;
+  }
+
+  // 由精到粗：先求高质量解，算不出来再逐步放宽
+  var SOLVE_PLAN = [[2, 200000, 1400], [3.5, 200000, 900], [9, 150000, 600]];
+
+  function solveAsync(start, onDone) {
+    var t0 = Date.now(), idx = 0, runner = null, ticks = 0;
+    function tick() {
+      if (!solving) { onDone(null); return; }          // 用户点了停止
+      if (!runner) {
+        var p = SOLVE_PLAN[idx];
+        runner = new AStarRunner(start, p[0], p[1], p[2]);
+      }
+      var r = runner.advance(26);
+      if (r.done) {
+        if (r.path) { onDone({ path: shorten(start, r.path), ms: Date.now() - t0 }); return; }
+        idx++;
+        if (idx >= SOLVE_PLAN.length) { onDone(null); return; }
+        runner = null;
+        setTimeout(tick, 0);
+        return;
+      }
+      if ((++ticks & 7) === 0) {
+        solveInfoEl.innerHTML = "🧮 搜索中… 已分析 <b>" + runner.nodes + "</b> 个局面";
+      }
+      setTimeout(tick, 0);
+    }
+    setTimeout(tick, 0);
+  }
+
+  /* ---------- 播放解法动画 ---------- */
+  var animating = false;
+
+  function playSolution(path) {
+    busy = true;
+    animating = true;
+    if (!started) { started = true; startTimer(); }
+    var i = 0;
+    // 步数越多节奏越快，整体控制在 7 秒左右
+    var delay = Math.max(45, Math.min(160, Math.round(7000 / path.length)));
+
+    function step() {
+      if (!animating) { busy = false; return; }         // 被手动停止
+      if (i >= path.length) { busy = false; animating = false; return; }
+      var emptyPos = findEmpty(grid);
+      var e = emptyPos[0] * N + emptyPos[1];
+      var ne = neighborIndex(e, path[i]);
+      if (ne < 0) { busy = false; animating = false; return; }
+      tryMove((ne / N) | 0, ne % N);
+      i++;
+      if (i < path.length && playing) setTimeout(step, delay);
+      else { busy = false; animating = false; }
+    }
+    setTimeout(step, 120);
+  }
+
+  var solveBtn = document.getElementById("solveBtn");
+  var solving = false;
+
+  function resetSolveBtn() {
+    solving = false;
+    busy = false;
+    solveBtn.textContent = "✨ 一键自动还原";
+    solveBtn.classList.remove("stop");
+  }
+
+  solveBtn.onclick = function () {
+    if (solving) {                       // 计算中再点一次 = 停止
+      resetSolveBtn();
+      solveInfoEl.innerHTML = "已停止";
+      return;
+    }
+    if (animating) {                     // 播放中再点一次 = 停止动画
+      animating = false;
+      busy = false;
+      solveInfoEl.innerHTML = "已停止，剩余部分自己来吧";
+      return;
+    }
+    if (!bgUrl || busy || !playing) return;
+
+    busy = true; solving = true;
+    solveInfoEl.innerHTML = "🧮 正在计算…";
+    solveBtn.textContent = "⏹ 停止计算";
+    solveBtn.classList.add("stop");
+
+    // 先让提示渲染出来，再开始搜索
+    setTimeout(function () {
+      var start = flatGrid();
+      // 1) 先试 IDA*：局面接近完成时可秒出「理论最少步数」
+      var best = null;
+      try { best = idaSolve(start, 300000, 400); } catch (e) { best = null; }
+      if (!solving) { resetSolveBtn(); return; }
+      if (best) {
+        resetSolveBtn();
+        solveInfoEl.innerHTML = "✨ <b>最优解 " + best.length + " 步</b>（理论最少）";
+        playSolution(best);
+        return;
+      }
+      // 2) 否则分片跑加权 A*，找近似最优解
+      solveAsync(start, function (res) {
+        if (!solving) { resetSolveBtn(); return; }
+        resetSolveBtn();
+        if (!res) { solveInfoEl.innerHTML = "😵 没算出来，先手动走几步再试"; return; }
+        solveInfoEl.innerHTML = "🔎 <b>" + res.path.length + " 步</b>还原" +
+          "（搜索 " + (res.ms / 1000).toFixed(1) + "s，接近最优）";
+        playSolution(res.path);
+      });
+    }, 40);
+  };
+
+  /* ---------- 开始 / 控制 ---------- */
+
+  function newGame() {
+    if (!bgUrl) return;
+    overlayEl.classList.remove("show");
+    peekEl.style.display = "none";
+    grid = shuffleGrid();
+    moves = 0;
+    started = false;
+    playing = true;
+    movesEl.textContent = "0";
+    timeEl.textContent = "0:00";
+    stopTimer();
+    buildBoard();
+    layoutTiles();
+    busy = false;
+    solving = false;
+    animating = false;
+    solveBtn.textContent = "✨ 一键自动还原";
+    solveBtn.classList.remove("stop");
+    solveInfoEl.innerHTML = "";
+  }
+
+  boardEl.addEventListener("click", function () {
+    if (!bgUrl) fileInput.click();
+  });
+  document.getElementById("uploadBtn").onclick = function () { fileInput.click(); };
+
+  fileInput.addEventListener("change", function (e) {
+    var file = e.target.files && e.target.files[0];
+    if (!file) return;
+    compressImage(file, function (url) {
+      bgUrl = url;
+      previewEl.style.backgroundImage = 'url("' + bgUrl + '")';
+      previewEl.innerHTML = '<span class="tag">原图</span>';
+      newGame();
+    });
+    fileInput.value = "";
+  });
+
+  document.getElementById("shuffleBtn").onclick = function () {
+    if (busy) return;
+    if (bgUrl) newGame();
+  };
+
+  // 看原图：独立图层盖在棋盘上，零重建
+  var peekBtn = document.getElementById("peekBtn");
+  function peekStart() {
+    if (!bgUrl || !playing || busy) return;
+    peekEl.style.backgroundImage = 'url("' + bgUrl + '")';
+    peekEl.style.display = "block";
+  }
+  function peekEnd() { peekEl.style.display = "none"; }
+  peekBtn.addEventListener("mousedown", peekStart);
+  peekBtn.addEventListener("mouseup", peekEnd);
+  peekBtn.addEventListener("mouseleave", peekEnd);
+  peekBtn.addEventListener("touchstart", function (e) { e.preventDefault(); peekStart(); }, { passive: false });
+  peekBtn.addEventListener("touchcancel", peekEnd);
+  peekBtn.addEventListener("touchend", peekEnd);
+
+  document.getElementById("againBtn").onclick = function () {
+    if (busy) return;
+    newGame();
+  };
+
+  document.addEventListener("keydown", function (e) {
+    if (busy) return;
+    if (e.key.indexOf("Arrow") === 0) {
+      e.preventDefault();
+      moveByDir(e.key);
+    }
+  });
+
+  /* ---------- 默认图片：进页面直接能玩，不用先上传 ---------- */
+  (function useDefaultImage() {
+    bgUrl = "../assets/img/huarongdao-default.jpg";
+    previewEl.style.backgroundImage = 'url("' + bgUrl + '")';
+    previewEl.innerHTML = '<span class="tag">原图</span>';
+    newGame();
+  })();
+})();
+</script>
+</body>
+</html>
