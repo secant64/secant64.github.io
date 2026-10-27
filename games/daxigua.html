@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#fff8f0">
+<title>合成大西瓜 · 小游戏厅</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%232fa84f'/%3E%3Ccircle cx='12' cy='12' r='3' fill='%238ad79a'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="daxigua.css">
+</head>
+<body>
+
+<a class="back-home" href="../index.html">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+  游戏厅
+</a>
+
+<div class="app">
+  <main class="stage">
+    <div class="hud">
+      <div class="hud-item">
+        <span class="hud-label">分数</span>
+        <span class="hud-value" id="score">0</span>
+      </div>
+      <div class="hud-item hud-best">
+        <span class="hud-label">最高</span>
+        <span class="hud-value sm" id="best">0</span>
+      </div>
+      <div class="hud-spacer"></div>
+      <div class="hud-next">
+        <span class="hud-label">下一个</span>
+        <canvas id="next" width="72" height="72"></canvas>
+      </div>
+      <button class="demo-btn" id="demoBtn" title="一键演示：自动合成出大西瓜" aria-label="一键演示">
+        <svg class="ic-play" viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true">
+          <path d="M8 4.8v14.4c0 .8.9 1.3 1.6.9l11-7.2c.6-.4.6-1.3 0-1.7l-11-7.2c-.7-.4-1.6.1-1.6.8z"/>
+        </svg>
+        <svg class="ic-stop" viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true">
+          <rect x="6" y="6" width="12" height="12" rx="2.5"/>
+        </svg>
+      </button>
+      <button class="icon-btn" id="soundBtn" title="音效开关" aria-label="音效开关">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 5 6 9H3v6h3l5 4V5z"/>
+          <path id="soundWave" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 6a8.6 8.6 0 0 1 0 12"/>
+          <path id="soundMute" class="hide" d="M16 9l5 6M21 9l-5 6"/>
+        </svg>
+      </button>
+      <button class="icon-btn" id="restartBtn" title="重新开始" aria-label="重新开始">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 12a8 8 0 1 1-2.5-5.8"/><path d="M20 4v4h-4"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="canvas-wrap" id="canvasWrap">
+      <canvas id="game"></canvas>
+
+      <div class="overlay show" id="overlay">
+        <div class="overlay-card" id="startCard">
+          <div class="mini-mark">
+            <span class="dot d1"></span><span class="dot d2"></span><span class="dot d3"></span><span class="dot d4"></span>
+          </div>
+          <h1>合成大西瓜</h1>
+          <p class="sub">移动鼠标或手指左右瞄准，松手落下水果。<br>两个相同的水果碰在一起，就会合成更大的。</p>
+          <button class="btn primary" id="startBtn">开始游戏</button>
+          <button class="btn ghost demo-cta" id="demoStartBtn">一键演示：看完整合成链</button>
+          <p class="tip">最终的大西瓜图案，可以在面板里上传图片替换</p>
+        </div>
+
+        <div class="overlay-card hidden" id="overCard">
+          <h1 class="over-title">游戏结束</h1>
+          <div class="over-score" id="finalScore">0</div>
+          <p class="sub">本局最高分 <b id="overBest">0</b></p>
+          <p class="sub small" id="maxFruitTip"></p>
+          <button class="btn primary" id="againBtn">再来一局</button>
+          <button class="btn ghost demo-cta" id="demoOverBtn">看一遍合成演示</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <aside class="panel">
+    <section class="card">
+      <h2>自定义大西瓜</h2>
+      <p class="card-sub">上传一张图片，替换最终的大西瓜</p>
+
+      <div class="dz" id="dz">
+        <canvas id="preview" width="176" height="176"></canvas>
+        <div class="dz-mask"><span>点击更换</span></div>
+      </div>
+      <p class="dz-hint" id="dzHint">PNG / JPG / WebP，图片只保存在本机浏览器</p>
+
+      <div class="seg" id="fitSeg">
+        <button data-mode="cover" class="on">铺满圆形</button>
+        <button data-mode="contain">完整显示</button>
+      </div>
+
+      <div class="row">
+        <button class="btn ghost" id="resetImg">恢复默认西瓜</button>
+      </div>
+
+      <input type="file" id="fileInput" accept="image/*" hidden>
+    </section>
+
+    <section class="card">
+      <h2>合成链</h2>
+      <div class="chain" id="chain"></div>
+    </section>
+
+    <section class="card">
+      <h2>玩法</h2>
+      <ul class="rules">
+        <li>左右移动瞄准，点击 / 松手落下水果</li>
+        <li>两个相同水果相撞会合成更大的水果并加分</li>
+        <li>水果堆高越过顶部的虚线，游戏结束</li>
+        <li>两个西瓜相撞会一起消失，额外 +300</li>
+        <li>点右上角 <b>▶</b> 可一键演示，自动合成出大西瓜</li>
+        <li>键盘 <kbd>←</kbd> <kbd>→</kbd> 移动，<kbd>空格</kbd> 落下</li>
+      </ul>
+    </section>
+  </aside>
+</div>
+
+<script src="../lib/matter.min.js"></script>
+<script src="daxigua.js"></script>
+</body>
+</html>
